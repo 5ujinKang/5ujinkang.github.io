@@ -1,11 +1,11 @@
 ---
 layout: author
-photo: /assets/img/uploads/profile.jpg
+photo: 
 name: Sujin
 display_name: Sujin Kang
 position: Editor
-bio: Just Do it
+bio: 
 github_username: waterjin6
-linkedin_username: thiagorossener
+linkedin_username: 
 ---
 
