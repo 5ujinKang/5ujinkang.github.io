@@ -9,3 +9,7 @@ gem "jekyll-paginate-content"
 gem "json"
 
 gem "webrick", "~> 1.7"
+gem "base64"
+gem "bigdecimal"
+gem "csv"
+gem "ostruct"

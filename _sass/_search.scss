@@ -63,6 +63,20 @@
       display: block;
     }
 
+    .search-snippet {
+      font-size: rem(13px);
+      color: lighten($accentDark, 20%);
+      margin: rem(2px) 0 0 0;
+      line-height: rem(20px);
+
+      mark {
+        background-color: $themeColor;
+        color: #ffffff;
+        border-radius: rem(3px);
+        padding: 0 rem(3px);
+      }
+    }
+
     .entry-date {
       float: right;
       display: none;

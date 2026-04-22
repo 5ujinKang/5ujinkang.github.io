@@ -1,7 +1,7 @@
 # Site Settings
-name: Crack The Code | Sujin's Portfolio
-title: Crack the Code | Sujin's Portfolio
-description: Sujin's Project Archieve
+name: SUJIN KANG
+title: STORAGE
+description: Hi
 tags:
   - Node.js
   - HTML/CSS
@@ -37,6 +37,8 @@ menu:
     url: /category/project
   - title: STUDY
     url: /category/study
+  - title: LIBRARY
+    url: /category/library
   - title : RESEARCH
     url : /category/research
   - title : ACTIVITY
