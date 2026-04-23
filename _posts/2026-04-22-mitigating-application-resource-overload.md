@@ -44,11 +44,17 @@ Resource overload control approach
 
 So no choice but dig in with 1's limitation. Request level behavior is needed. 
 
-
+- A small number of problematic requests can have a severe impact on system overall performance.
+- Handling this is hard because internal resource contention among concurrently executing requests is subtle and unpredictable.
 
 ---
 
 ## Prior Work: 
+- Keep track of global signals (ex. Breakwater): Global signals such as queuing delays cannot accurately predict which requests will take over critical resources.
+
+- Dropping non-problematic requests (ex. Protego): can temporarily preserve SLO attainment but cannot effectively resolve the underlying performance interference caused by the problematic requests.
+
+- pBox : don't drop running request,it cannot directly mitigate resource overload caused by problematic requests already executing.
 
 ---
 
@@ -58,53 +64,59 @@ Work in request level.
 Cancel the culprit request that causes severe resource contention.
 Eliminating HOL Blocking requests → fewer request drops and more efficient resource contention resolution.
 
+An effective overload control system should allow requests to execute first, observe their actual impact, estimate each request’s current and future resource usage, and selectively cancel those that monopolize critical resources.
 
-## Problem
 
-- This is hard because internal resource contention among concurrently executing requests is subtle and unpredictable.
-- Global signals such as queuing delays cannot accurately predict which requests will take over critical resources.
-
+## Challenges
+- Is canceling even safe? What if it cancels dangerous or important request?: Use provided task cancellation. And let app developer decide which one is the cancellable requests. And it's trend to add task cancellation in application market. 
 
 
 
 # Design
 ### Monitor
-- the overall application resource usage
-- the resource consumption of each executing request.
-@ - How to monitor at the individual request level, not the workload level?
+- the overall application resource usage : to sense contention and activate whole cancelling procedure.
+- the resource consumption of each executing request. : to choose which one to cancel.
+- monitors the resource impact of each admitted request and cancels those most likely to cause performance degradation.
 
 **Tools**
 - Unify demands: groups all application activities (requests and background tasks) -> cancelable tasks.
 - Unify resources: resource abstraction.
 
-**What to monitor**
-- contention level
+**What to monitor in request level**
+- contention level: 
 - resource gain : how much load would be free by canceling a given request.
-
-### Sense the culprit
 
 
 ### Canceling
 - How to cancel requests in a unified way across many different applications?, How to cancel an executing request safely?: Most app has cancellation initiator -> just hook this up to the model.
 
----
+
+### How to integrate this model into Applications?
+use API with very small amount of Code, upto 7n lines changes in application.
+
+- Define the scope of cancellable tasks: createCancel & freeCancel
+
+### Per-task Resource Usage Tracking
+- The task manager assigns each cancellable task with a unique task ID and maintains a mapping between cancellable task to their corresponding application-level activities.
+
+- Each application resource supports 3 operations: get, free, and wait. use this to estimate contentions.
+    - getResource: records when a task acquires a resource
+    - freeResource: records when a resource is released
+    - slowByResource: records when a task is delayed while waiting for a resource.
+
+- Application resources
+    - (1) synchronization resources, representing resources protected by synchronization primitives
+    - (2) queue resources, representing application-managed task queues
+    - (3) memory resources, representing application-managed memory pools or caches.
+
+- It uses progress parameter to estimate progress.
 
 
-## Challenges
+### Overhead?
+The overhead of each API is minimal, as Atropos only records a tuple (value, rscType, eventType) along with a timestamp.
 
 
 
----
-
-## Design
-
-*(to be filled)*
-
----
-
-## Implementation
-
-*(to be filled)*
 
 ---
 
@@ -123,7 +135,7 @@ While achieving minimal request drop, the approach significantly outperforms sta
 ## Questions
 
 1. Is canceling the request itself acceptable? If a request consumes a lot of resources, it is likely an important one — is it okay to cancel it?
-
+2. But why didn't they mentioned Caladan? I don't know...
 ---
 
 ## What I Learned & Study materials
@@ -155,7 +167,11 @@ While achieving minimal request drop, the approach significantly outperforms sta
 
 4. This work's artifact : https://github.com/OrderLab/Atropos .
 
-5. But why didn't they mentioned Caladan? I don't know...
+5. Application resources are logical abstractions defined by an application. These resources typically encapsulate underlying system resources, such as memory or synchronization primitives, to provide higher-level, application-specific functionality.
+
+6. The buffer pool is configured to be smaller than the total system memory. Therefore, monitoring overall system memory usage alone is insufficient to detect or mitigate buffer pool contention effectively.
+
+
 ---
 
 ## Meeting
