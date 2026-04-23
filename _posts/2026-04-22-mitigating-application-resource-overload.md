@@ -136,7 +136,16 @@ While achieving minimal request drop, the approach significantly outperforms sta
 
 1. Is canceling the request itself acceptable? If a request consumes a lot of resources, it is likely an important one — is it okay to cancel it?
 2. But why didn't they mentioned Caladan? I don't know...
+3. What about using unnecessary resource in re-running? intrinsically it is delaying. what if we just delaying??
+4. in Scheduling, there is no such a "request canceling". This is actually HOL Blocking problem (wow i was right!) : 2)preemption (except locking -> can solve with OCC ut it doesn't have preemption), 3) ordering=priority: no overhead,move heavyweight request last order (CNA, shfllock/ordering locking papers ) - but isn't it same with canceling??
+
+in ordering, challenge for figuring out HW/LW: 
+- Static analysis
+- profiling
+
 ---
+
+generalize the problem -> find the similar situation (following the general system design pattern)
 
 ## What I Learned & Study materials
 
