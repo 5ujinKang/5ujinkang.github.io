@@ -3,6 +3,7 @@ name: SUJIN KANG
 title: "'s HDD"
 description: Hi
 tags:
+  - Featured
   - Awarded
   - Node.js
   - HTML/CSS
@@ -16,8 +17,8 @@ tags:
   - Award
   - SSLAB
   - Book
-  - express
-  - vue
+  - Express
+  - Vue
   - PM
   - UX/UI
   - Launching
@@ -26,13 +27,13 @@ tags:
 show_hero: true
 menu:
   - title: FEATURED
-    url: /category/featured
-  - title: PROJECT
-    url: /category/project
-  - title: LIBRARY
-    url: /category/library
+    url: /tag/featured
   - title: RESEARCH
     url: /category/research
+  - title: LIBRARY
+    url: /category/library
+  - title: PROJECT
+    url: /category/project
   - title: ACTIVITY
     url: /category/activity
 email: waterjin326@gmail.com
@@ -49,7 +50,7 @@ github_username: 5ujinkang
 facebook_username: 
 twitter_username: 
 instagram_username:
-linkedin_username: Sujin Kang
+linkedin_username:
 medium_username:
 
 

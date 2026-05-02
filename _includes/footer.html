@@ -5,6 +5,11 @@
           <svg><use xlink:href="#icon-github"></use></svg>
         </a>
       {% endif %}
+      {% if site.email %}
+        <a href="mailto:{{ site.email }}" title="Email">
+          <svg><use xlink:href="#icon-email"></use></svg>
+        </a>
+      {% endif %}
       {% if site.facebook_username %}
         <a href="https://www.facebook.com/{{ site.facebook_username }}" title="Facebook">
           <svg><use xlink:href="#icon-facebook"></use></svg>
@@ -25,14 +30,7 @@
           <svg><use xlink:href="#icon-instagram"></use></svg>
         </a>
       {% endif %}
-      {% if site.linkedin_username %}
-        <a href="https://www.linkedin.com/in/{{ site.linkedin_username }}" title="LinkedIn">
-          <svg><use xlink:href="#icon-linkedin"></use></svg>
-        </a>
-      {% endif %}
     </p>
-
-    {% include links.html %}
 
     <p>
       <span>Jekflix</span> was made with <svg class="love"><use xlink:href="#icon-heart"></use></svg> by <a href="https://rossener.com" target="_blank" class="creator">Thiago Rossener</a>

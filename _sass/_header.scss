@@ -1,11 +1,29 @@
 @font-face {
   font-family: 'Halo';
-  src: url('/assets/fonts/Halo.ttf') format('truetype');
+  src: url('../fonts/Halo.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Game Over';
+  src: url('../fonts/game_over.woff2') format('woff2'),
+       url('../fonts/game_over.ttf') format('truetype');
 }
 
 @font-face {
   font-family: 'Karmatic Arcade';
-  src: url('/assets/fonts/ka1.ttf') format('truetype');
+  src: url('../fonts/ka1.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Pixel Gamer';
+  src: url('../fonts/ARCADECLASSIC.woff2') format('woff2'),
+       url('../fonts/ARCADECLASSIC.TTF') format('truetype');
+}
+
+@font-face {
+  font-family: 'Pixel Gamer';
+  src: url('../fonts/PixelGamer-Regular.woff2') format('woff2'),
+       url('../fonts/PixelGamer-Regular.otf') format('opentype');
 }
 
 html,
@@ -36,8 +54,9 @@ body {
       display: block;
       color: $accentDark;
       text-decoration: none;
-      font-size: rem(48px);
-      font-family: 'Halo', sans-serif;
+      font-size: rem(26px);
+      font-family: 'Pixel Gamer', sans-serif;
+      font-weight: normal;
       position: relative;
       outline: 0;
     }
@@ -99,14 +118,14 @@ body {
 
   .get-theme {
     display: none;
-    font-family: 'Karmatic Arcade', sans-serif;
-    font-size: rem(24px);
-    font-weight: bold;
+    font-family: 'Pixel Gamer', sans-serif;
+    font-size: rem(12px);
+    font-weight: normal;
     text-decoration: none;
     background-color: $themeColor;
     color: #000000;
-    padding: rem(5px) rem(10px);
-    border-radius: rem(5px);
+    padding: rem(6px) rem(12px);
+    border-radius: rem(4px);
     float: right;
     margin: rem(5px) rem(15px) rem(5px) rem(5px);
 

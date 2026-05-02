@@ -1,6 +1,7 @@
 @font-face {
-  font-family: 'Super Pixel';
-  src: url('/assets/fonts/Super Pixel Personal Use.ttf') format('truetype');
+  font-family: 'Pixel Gamer';
+  src: url('../fonts/PixelGamer-Regular.woff2') format('woff2'),
+       url('../fonts/PixelGamer-Regular.otf') format('opentype');
 }
 
 .home {
@@ -101,9 +102,9 @@
     height: rem(36px);
     line-height: rem(36px);
     text-transform: uppercase;
-    font-family: 'Halo', sans-serif;
-    font-weight: bold;
-    font-size: rem(18px);
+    font-family: 'Pixel Gamer', sans-serif;
+    font-weight: normal;
+    font-size: rem(14px);
     padding: 0 rem(15px);
 
     a {

@@ -45,10 +45,10 @@ aside.sidebar {
     left: 0;
   }
 
-  h2 {
+  h2.menu-title {
     margin: 0 rem(20px) 0;
-    @include mainFont(400);
-    font-family: 'Halo', sans-serif;
+    font-family: 'Pixel Gamer', sans-serif;
+    font-weight: normal;
     font-size: rem(28px);
     color: $primaryDark;
     border-bottom: 1px solid $primaryDark;
@@ -77,9 +77,9 @@ aside.sidebar {
           display: block;
           padding: rem(15px) rem(20px);
           text-decoration: none;
-          @include mainFont(300);
-          font-family: 'Halo', sans-serif;
-          font-size: rem(22px);
+          font-family: 'Pixel Gamer', sans-serif;
+          font-weight: normal;
+          font-size: rem(18px);
           color: $primaryDark;
 
           &:hover {
