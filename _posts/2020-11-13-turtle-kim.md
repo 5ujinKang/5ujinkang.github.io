@@ -9,7 +9,7 @@ optimized_image: https://res.cloudinary.com/drgsu4lyo/image/upload/v1657983792/t
 category: project
 tags:
   - Award
-  - Creative
+  - Awarded
   - Python
 author: Sujin
 paginate: true

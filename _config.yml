@@ -1,64 +1,56 @@
 # Site Settings
 name: SUJIN KANG
-title: STORAGE
+title: "'s HDD"
 description: Hi
 tags:
+  - Awarded
   - Node.js
   - HTML/CSS
   - C++
-  - Server
-  - MySQL
-  - Java
+  - Backend
   - JavaScript
   - Python
   - Data-Structure
   - Docker
   - Leadership
-  - Creative
   - Award
   - SSLAB
   - Book
-  - Android
   - express
   - vue
   - PM
   - UX/UI
   - Launching
   - CloudFoundry
+
 show_hero: true
 menu:
-  - title : ABOUT
-    url : /about
-  - title: HOME
-    url: /
   - title: FEATURED
     url: /category/featured
   - title: PROJECT
     url: /category/project
-  - title: STUDY
-    url: /category/study
   - title: LIBRARY
     url: /category/library
-  - title : RESEARCH
-    url : /category/research
-  - title : ACTIVITY
-    url : /category/activity
+  - title: RESEARCH
+    url: /category/research
+  - title: ACTIVITY
+    url: /category/activity
 email: waterjin326@gmail.com
 # See: https://disqus.com/
-disqus_username: 
+disqus_username:
 # Contact Form Setting
 # See: https://formspree.io/
-formspree_form_id: 
+formspree_form_id:
 
 
 # Social Media Settings
 # Remove the item if you don't need it
-github_username: Waterjin6
+github_username: 5ujinkang
 facebook_username: 
 twitter_username: 
-instagram_username: 
-linkedin_username: 
-medium_username: 
+instagram_username:
+linkedin_username: Sujin Kang
+medium_username:
 
 
 # Posts Settings
@@ -129,4 +121,4 @@ exclude: [
 ]
 
 # Theme
-version: v3.1.1
+version: ""

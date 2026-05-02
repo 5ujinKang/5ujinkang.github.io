@@ -1,3 +1,8 @@
+@font-face {
+  font-family: 'Super Pixel';
+  src: url('/assets/fonts/Super Pixel Personal Use.ttf') format('truetype');
+}
+
 .home {
   @include mainFont(400);
   -webkit-font-smoothing: antialiased;
@@ -96,6 +101,7 @@
     height: rem(36px);
     line-height: rem(36px);
     text-transform: uppercase;
+    font-family: 'Halo', sans-serif;
     font-weight: bold;
     font-size: rem(18px);
     padding: 0 rem(15px);

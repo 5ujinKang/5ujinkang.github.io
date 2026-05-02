@@ -1,29 +1,42 @@
 name: SUJIN KANG
-title: STORAGE
+title: "'s HDD"
 description: Hi
 tags:
-  - Android
+  - Awarded
   - Node.js
-  - Web
-  - App
-  - Game
+  - HTML/CSS
+  - C++
+  - Backend
+  - JavaScript
   - Python
-  - Research
-  - Blog
- 
+  - Data-Structure
+  - Docker
+  - Leadership
+  - Award
+  - SSLAB
+  - Book
+  - express
+  - vue
+  - PM
+  - UX/UI
+  - Launching
+  - CloudFoundry
+
 show_hero: true
 menu:
-  - title: Home
-    url: /
-  - title: About
-    url: /about
-  - title: Contact
-    url: /contact
-  - title: Feed
-    url: /feed.xml
+  - title: FEATURED
+    url: /category/featured
+  - title: PROJECT
+    url: /category/project
+  - title: LIBRARY
+    url: /category/library
+  - title: RESEARCH
+    url: /category/research
+  - title: ACTIVITY
+    url: /category/activity
 email: waterjin326@gmail.com
 # See: https://disqus.com/
-disqus_username: 
+disqus_username:
 # Contact Form Setting
 # See: https://formspree.io/
-formspree_form_id: 
+formspree_form_id:

@@ -1,3 +1,13 @@
+@font-face {
+  font-family: 'Halo';
+  src: url('/assets/fonts/Halo.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Karmatic Arcade';
+  src: url('/assets/fonts/ka1.ttf') format('truetype');
+}
+
 html,
 body {
   height: 100%;
@@ -19,14 +29,15 @@ body {
   .logo {
     display: inline-block;
     margin: 0;
-    height: rem(32px);
-    line-height: rem(32px);
+    height: rem(48px);
+    line-height: rem(48px);
 
     a {
       display: block;
       color: $accentDark;
       text-decoration: none;
-      font-size: rem(32px);
+      font-size: rem(48px);
+      font-family: 'Halo', sans-serif;
       position: relative;
       outline: 0;
     }
@@ -88,11 +99,12 @@ body {
 
   .get-theme {
     display: none;
-    font-size: rem(13px);
+    font-family: 'Karmatic Arcade', sans-serif;
+    font-size: rem(24px);
     font-weight: bold;
     text-decoration: none;
     background-color: $themeColor;
-    color: $accentDark;
+    color: #000000;
     padding: rem(5px) rem(10px);
     border-radius: rem(5px);
     float: right;
@@ -100,6 +112,10 @@ body {
 
     @include media(">=sm") {
       display: inline-block;
+    }
+
+    &:hover {
+      color: #ffffff;
     }
   }
 }

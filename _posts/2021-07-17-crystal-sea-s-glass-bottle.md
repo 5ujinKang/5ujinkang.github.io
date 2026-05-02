@@ -9,9 +9,7 @@ optimized_image: https://res.cloudinary.com/drgsu4lyo/image/upload/v1658032745/s
 category: featured
 tags:
   - Award
-  - Java
   - HTML/CSS
-  - Creative
   - Web
 author: Sujin
 paginate: true

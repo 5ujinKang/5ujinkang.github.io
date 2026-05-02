@@ -11,11 +11,9 @@ tags:
   - Award
   - Node.js
   - PM
-  - Server
+  - Backend
   - PaaS
   - Award
-  - MySQL
-  - Ubuntu
   - Leadership
   - CloudFoundry
 author: Sujin

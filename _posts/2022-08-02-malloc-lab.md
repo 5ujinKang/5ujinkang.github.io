@@ -6,11 +6,10 @@ subtitle: Implicit/Explicit/Segregated List - First/Next/Best/Worst fit
 description: Implicit/Explicit/Segregated List - First/Next/Best/Worst fit
 image: https://res.cloudinary.com/drgsu4lyo/image/upload/v1676904018/%ED%99%94%EB%A9%B4_%EC%BA%A1%EC%B2%98_2023-02-20_233938_zg6neh.jpg
 optimized_image: https://res.cloudinary.com/drgsu4lyo/image/upload/v1676904018/%ED%99%94%EB%A9%B4_%EC%BA%A1%EC%B2%98_2023-02-20_233938_zg6neh.jpg
-category: study
+category: project
 tags:
   - Data-Structure
   - SSLAB
-  - Ubuntu
 author: Sujin
 paginate: true
 ---
