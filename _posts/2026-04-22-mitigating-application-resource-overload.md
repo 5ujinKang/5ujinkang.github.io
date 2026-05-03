@@ -9,8 +9,8 @@ tags:
   - paper-review
   - SOSP
   - "2025"
-image: /assets/img/uploads/cat/1.jpg
-optimized_image: /assets/img/uploads/cat/1.jpg
+image: /assets/img/uploads/cat/27.jpg
+optimized_image: /assets/img/uploads/cat/27.jpg
 author: Sujin
 paginate: true
 ---
