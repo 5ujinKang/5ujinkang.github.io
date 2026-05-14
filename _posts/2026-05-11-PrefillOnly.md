@@ -17,10 +17,10 @@ paginate: true
 ---
 
 **Venue:** SOSP 2025  
-**Link:** https://dl.acm.org/doi/10.1145/3731569.3764834
+**Link:** doi[https://dl.acm.org/doi/10.1145/3731569.3764834]
 
 **Topic:** 
-LLM inference Engines, 
+LLM inference Engines 
 
 ---
 # Summary
@@ -42,7 +42,7 @@ Find the exact memory usage bottleneck= the root cause, and solve it out.
 ## Prefill-only requests' characteristics: can save only last computed layer in KV cache
 1. Smaller active GPU memory footprint: no decoding -> no repeated use in KV caches -> no need to store the KV caches for all layers.
 2. Enable to use JCT-aware scheduling policies: the output length = 1(fixed) -> LLM engine knows the amount of work for each request
-@but how to estimate JCT?
+
 
 ## Problem
 existing LLM engines considers Decode stage. even it doesn't, save all layers in KV cache.
@@ -67,7 +67,7 @@ How to overcome this chunked prefiling's drawback?
 
 ### What is the cause of Memory usage?
 There are 2 layers. non-attention layers & attention layers.
-most GPU memory usage in LLM inference comes from non-attention layers. @why?
+most GPU memory usage in LLM inference comes from non-attention layers.
 -> worth to seperate and handle non-attention layers closely to reduce the GPU memory footprint.
 
 ### Hybrid prefilling : distinguish non-attention layers vs. attention layers
@@ -82,17 +82,34 @@ completes prefilling in a single forward pass:
 ## 1. It's hard to estimate JCT: it also depends on cache hit/miss
 
 ### KV cache constantly change.
--> Continuously re-estimates the prefill time of all waiting requests before each scheduling step. @ how? use history?
--> increase the prefix cache hit rate. @ where is this came from?
+-> Continuously re-estimates the prefill time of all waiting requests before each scheduling step.
+-> increase the prefix cache hit rate.
 ### additional scheduling algorithm modification
 to improve fairness & prevent starvation
 
 
 ---
+# Workflow
+## Profile Run
+0. user provides the maximum input length (MIL). 
+1. PrefillOnly estimates the GPU memory requirement: forwarding a synthetic request of maximum length through the LLM model & measuring peak GPU memory usage during this process. 
+2. The remaining GPU memory is then reserved for prefix KV caches.
+
+## During Runtime
+1. PrefillOnly launches an HTTP server compatible with the OpenAI API protocol, through which users send prefill-only requests. 
+2. When a new request arrives, PrefillOnly tokenizes it and sends it to the scheduler process via ZeroMQ-based RPC. 
+3. The scheduler then schedules requests at the granularity of a step. 
+4. During each step, PrefillOnly 
+    1. iterates through the waiting queue
+    2. selects the request with the minimum estimated prefill time, 
+    3. pops it from the queue, and sends it to the executor processes. 
+    4. The executors then perform the prefill-only inference 
+    5. return the probability distribution of the first output token back to the user.
+
 # Design
-0. 
-
-
+1. Hybrid prefilling: 
+2. Suffix KV cache discarding/offloading
+3. Shortest prefill first with continuous prefill time estimation
 ---
 
 # Implementation
@@ -179,18 +196,37 @@ better use it when we need broader visibility.
 
 ## Saving Cache space means better latency
 
-## Saving memory footprints means better throughput @ why?
+## Saving memory footprints means better throughput
+Memory is a hard limit on concurrency
+A GPU/CPU has a fixed amount of RAM. If each job (request, batch, process) consumes less memory, more jobs fit at the same time. Throughput = work done per unit time, so more parallel work = higher throughput.
 
+## when the amount of work is fixed uniformly, requests with longer cache hits generally have shorter completion time.
 
----
-
-# Questions
-0. Offloading the KV caches: Instead of discards suffix KV caches(can't reuse later), what if we offloading the KV caches? @but there is no case to reuse isn't it? if we only consider non-attention layer.
-1. 
 ---
 
 # Meeting Notes
+## Approach : if we want to introduce a new layer
+1. Add static analysis / human annotations
+2. Modify HW
 
+## How to evaluate the solution
+1. Solve the problem
+2. Adhere to principles
+3. Exploit properties of LLM
+
+## dividing phases
+only works when target is big enough
+- millisecond scale: optimize each phase would work.
+- microsecond scale: overhead would be crazy
+- prefill-decode disaggregation (seperation)
+- prefill: non-attention and attention layer.
+
+if the condition is long enough, can we optimize and seperate phase of Garbage Collection?
+Phase is exist : [https://blog.ycrash.io/different-phases-of-garbage-collection-events]
+
+
+## Writing a paper
+argue completely within space limits
 
 ---
 # Thoughts.
