@@ -1,0 +1,117 @@
+---
+date: 2026-05-20 00:00:00
+layout: post
+title: "Jenga: Effective Memory Management for Serving LLM with Heterogeneity"
+subtitle: 
+description: 
+category: library
+tags:
+  - paper-review
+  - SOSP
+  - "2025"
+image: /assets/img/uploads/cat/31.jpg
+optimized_image: /assets/img/uploads/cat/31.jpg
+author: Sujin
+paginate: true
+---
+
+**Venue:** SOSP 2025  
+**Link:** doi[https://dl.acm.org/doi/pdf/10.1145/3731569.3764823]
+
+**Topic:** 
+
+---
+# Summary
+
+
+
+
+---
+
+# Background
+## Problem: GPU memory capacity is primary bottleneck to high throughput
+- Large language models are expensive to run.
+- A common strategy to improve serving throughput: batching multiple requests in parallel.
+- But, batching imposes heavy pressure on GPU memory capacity.
+    - GPU memory needs grows linearly with the batch size: each request needs to cache its entire prefix
+Need memory management which increase serving throughput & reduce costs.
+
+## Priorworks
+### PagedAttention: the most widely used memory management algorithm for LLM serving
+Leverages homogeneous-style management
+Divides the memory into fixed-size pages & allocates pages to requests dynamically based on token count in the request (request length)
+
+### Limitation: struggle with modern LLMs (heterogeneous)
+: because of the growing heterogeneity in the sizes of model's internal embeddings & attention mechanisms.
+1. Recent models often have heterogeneous embeddings with different sizes.
+2. not all layers use the same attention mechanism: number of pages needed for each layers is different. @ explain more. 
+
+### Drawback with modern LLMS: memory under-utlization
+uniformly partitioning memory using PagedAttention leads to a throughput reduction of up to 2.16X compared to an oracle-guided memory partition because the under-utilization of memory limits the maximum batch size that can be used. 
+
+## Requirements: memory management handles modern LLMs (heterogeneous)
+In modern heterogeneous LLMs, memory consumption 
+- varies significantly across layers
+- is higly dependent on request length
+
+a heterogeneity-aware memory management system to address the variability in both
+- embedding size
+- attention mechanism
+
+- 
+
+
+
+
+
+---
+# Design
+Memory allocation framework for heterogeneous LLMs.
+
+## Key Idea
+
+## Challenges
+### 1. Memory fragmentation cuased by embeddings of different sizes
+### 2. Unpredictable memory usage from varying attention mechanisms across layers.
+#### Solution: attention-property-aware allocator
+leverage the least common multiple of embedding sizes to optimize memory usage
+1. perform cache eviction based on attention patterns to enhance memory reuse
+
+---
+# Effects
+
+
+---
+# Implementation
+implement in vLLM
+
+---
+
+# Evaluation
+improves GPU memory utilization by up to 83% @ how measured and how this is possible?
+serving throughput by up to 2.16× (1.46× on average). @ why?
+
+---
+# Related Works
+
+---
+
+# Contributions
+
+---
+
+# Inputs
+1. embeddings: numerical representations of data — such as words, sentences, or images — in a continuous vector space.
+
+---
+
+# Questions
+
+---
+
+# Meeting Notes
+
+
+---
+# Thoughts.
+
