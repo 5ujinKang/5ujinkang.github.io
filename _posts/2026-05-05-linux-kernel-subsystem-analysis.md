@@ -288,7 +288,17 @@ The following three scenarios trace real kernel execution paths derived from dir
 
 ### Overview
 
-A running task is preempted when its virtual runtime exceeds its deadline. The timer interrupt, firing every ~4 ms on a 250 Hz kernel, drives the scheduler accounting path. `sched_tick()` advances the current task's `vruntime`, and if the task has exhausted its time slice, sets `TIF_NEED_RESCHED`. The actual context switch happens the next time `schedule()` is called—either voluntarily (the task sleeps) or at a preemption point on return from interrupt/syscall. `__schedule()` picks the highest-priority runnable task by walking the `sched_class` vtable in priority order, and `context_switch()` switches both the address space and the CPU register state.
+The Linux scheduler decides which task runs on a CPU and when to switch away from it. This section traces the full path from a hardware timer tick to the moment a new task starts executing.
+
+**Step 1 — The timer fires.** A hardware clock interrupts the CPU every ~4 ms (250 times per second). Each interrupt calls `sched_tick()`, which asks: has the current task been running long enough?
+
+**Step 2 — Tracking fairness with virtual runtime.** Each task accumulates a counter called `vruntime` — the total CPU time it has consumed, normalized by its priority weight. Higher-priority tasks accumulate `vruntime` more slowly, so they stay runnable longer. When `vruntime` exceeds the task's assigned deadline, the scheduler marks it for replacement by setting a flag called `TIF_NEED_RESCHED` on the CPU.
+
+**Step 3 — The flag is a signal, not an immediate switch.** The kernel cannot safely swap tasks mid-instruction. Instead, `TIF_NEED_RESCHED` is checked at two safe moments: when the task voluntarily goes to sleep (waiting for I/O, a lock, etc.), or when control returns to userspace after an interrupt or syscall completes. At either point, `schedule()` is invoked.
+
+**Step 4 — Picking the next task.** `__schedule()` walks a priority-ordered list of scheduling classes — stop → deadline → real-time → fair (CFS) → idle — and asks each class for its best runnable task. Within the CFS class, `pick_next_task_fair()` selects the task with the smallest `vruntime` from a red-black tree, meaning the task that has received the least CPU time relative to its peers.
+
+**Step 5 — The context switch.** `context_switch()` performs two operations to hand the CPU to the new task: first, it loads the new task's memory map (`switch_mm_irqs_off()` — updates the CPU's page table pointer CR3, so the CPU can access the new task's memory); second, it saves all CPU registers for the old task and restores them for the new task (`__switch_to()` — includes stack pointer, floating-point state, and segment registers). After this, the CPU is executing the new task's code as if it had never stopped.
 
 ---
 
@@ -348,7 +358,7 @@ A running task is preempted when its virtual runtime exceeds its deadline. The t
 
 1. `try_to_wake_up(p, state, wake_flags)` (`core.c:4152`) — acquires `p->pi_lock`, checks `p->__state` matches `state`.
 2. `ttwu_queue(p, cpu, wake_flags)` (`core.c:3968`) — if remote CPU: queues via `__smp_call_single_queue()` (IPI). If local: directly calls `ttwu_do_activate()`.
-3. `activate_task(rq, p, flags)` (`core.c:2200`) — calls `sched_class->enqueue_task()`, e.g. `enqueue_task_fair()` (`fair.c:6115`) — inserts `se` into `cfs_rq->tasks_timeline` RB-tree at the computed vruntime position.
+3. `activate_task(rq, p, flags)` (`core.c:2200`) — calls `sched_class->enqueue_task()`, e.g. `enqueue_task_fair()` (`fair.c:7168`) — inserts `se` into `cfs_rq->tasks_timeline` RB-tree at the computed vruntime position.
 4. `wakeup_preempt(rq, p, flags)` — checks if newly woken task should preempt current; if so, calls `resched_curr()`.
 
 **Cross-CPU load balancing:**
@@ -435,15 +445,17 @@ flowchart TD
     M4 --> N["pick_next_task_fair()<br/>fair.c:9204<br/>→ pick_task_fair()<br/>→ leftmost rb_node (min vruntime)"]
     N --> O["context_switch()<br/>core.c:5329"]
     O --> O1["switch_mm_irqs_off()<br/>Load CR3, flush TLB if ASID differs"]
-    O --> O2["switch_to() macro<br/>→ __switch_to()<br/>arch/x86/kernel/process_64.c:610<br/>FPU · TLS · FS/GS · kernel RSP"]
+    O1 --> O2["switch_to() macro<br/>→ __switch_to()<br/>arch/x86/kernel/process_64.c:610<br/>FPU · TLS · FS/GS · kernel RSP"]
     O2 --> P["finish_task_switch()<br/>core.c:5202<br/>Release rq lock · drop prev ref<br/>Fire sched_in perf notifiers"]
     P --> Q["✅ Next task resumes execution"]
+    H -.->|"next timer tick"| A
 
     subgraph WAKEUP["Wake-up Path"]
         W1["try_to_wake_up()<br/>core.c:4152"] --> W2["ttwu_queue()<br/>core.c:3968<br/>IPI if remote CPU"]
         W2 --> W3["activate_task()<br/>core.c:2200<br/>→ enqueue_task_fair()<br/>Insert se into CFS RB-tree"]
         W3 --> W4["wakeup_preempt()<br/>→ resched_curr() if higher prio"]
     end
+    W4 -.->|"TIF_NEED_RESCHED set"| J
 </div>
 
 ---
@@ -452,7 +464,13 @@ flowchart TD
 
 ### Overview
 
-Memory management spans three interlocking paths: (A) the **page fault handler** — translating a missing PTE into a physical page; (B) the **buddy + SLUB allocator** — providing physical pages to both kernel and userspace allocations; and (C) **kswapd** — the background reclaim daemon that keeps free memory above watermarks. All three interact: page faults call the allocator, the allocator wakes kswapd when watermarks are breached, and kswapd calls back into the block layer to write dirty pages.
+Memory management covers how the kernel gives programs the memory they ask for, and how it takes memory back when the system runs low. This section traces three paths that work together continuously.
+
+**Path A — Page fault: giving a program its memory on demand.** When a program accesses a memory address that has no physical RAM assigned to it yet, the CPU raises a hardware exception called a page fault. The kernel's fault handler walks the program's page table to find out why the page is missing, then decides what to do: for a brand-new anonymous page (e.g. a freshly written variable), it allocates a physical page and maps it in; for a copy-on-write page (e.g. after `fork()`), it copies the parent's page before allowing the write; for a page that was swapped out to disk, it reads it back from the swap device. The program never sees any of this — from its perspective the memory access simply succeeds.
+
+**Path B — Buddy allocator + SLUB: the kernel's internal memory supply.** Every time the kernel itself needs memory — for data structures, driver buffers, page tables — it calls `kmalloc()`. The SLUB slab allocator sits on top and maintains per-CPU caches of fixed-size objects so that common allocations are lock-free and nearly instant. When a cache is empty, SLUB asks the buddy allocator for a fresh page. The buddy allocator manages all free physical pages grouped by size (powers of two), splitting and merging blocks to satisfy requests. If free memory falls below a threshold, the slow path wakes `kswapd` before retrying.
+
+**Path C — kswapd: reclaiming memory in the background.** The kernel tracks all physical pages on LRU (Least Recently Used) lists — pages that have not been accessed recently drift toward the "inactive" end. A kernel thread called `kswapd` runs whenever free memory drops below a watermark. It scans the inactive list, and for each page it finds: if the page is clean (no unsaved changes), it is simply freed; if the page is dirty (modified but not yet written to disk), it is written back to its backing file or swap device first, then freed. This keeps a pool of free pages available so that page faults can be satisfied quickly without stalling.
 
 ---
 
@@ -470,7 +488,7 @@ Memory management spans three interlocking paths: (A) the **page fault handler**
 | `do_anonymous_page()` | `mm/memory.c` | 5321 | Anonymous fault: maps zero-page for reads; for writes: `alloc_anon_folio()` + `set_pte_at()` |
 | `do_wp_page()` | `mm/memory.c` | 4228 | Write-protect fault: determines if COW is needed, calls `do_cow_fault()` |
 | `do_cow_fault()` | `mm/memory.c` | 5905 | Copy-on-Write: `folio_prealloc()` → `__do_fault()` → `copy_mc_user_highpage()` → `finish_fault()` |
-| `do_swap_page()` | `mm/memory.c` | — | Swap-in: reads page from swap device, installs PTE |
+| `do_swap_page()` | `mm/memory.c` | 4779 | Swap-in: reads page from swap device, installs PTE |
 | `__alloc_frozen_pages_noprof()` | `mm/page_alloc.c` | 5190 | Core physical allocator: fast path via `get_page_from_freelist()`, slow path via `__alloc_pages_slowpath()` |
 | `__alloc_pages_noprof()` | `mm/page_alloc.c` | 5255 | Public buddy allocator entry; wraps `__alloc_frozen_pages_noprof()`, marks page refcounted |
 | `get_page_from_freelist()` | `mm/page_alloc.c` | 3792 | Scans zonelist for a zone with free pages above watermark |
@@ -578,9 +596,11 @@ flowchart TD
         PF5 --> PF6["__handle_mm_fault()<br/>memory.c:6449<br/>pgd → p4d → pud → pmd walk<br/>pmd_alloc() if missing"]
         PF6 --> PF7["handle_pte_fault()<br/>memory.c:6367"]
         PF7 --> PF8{PTE state?}
-        PF8 -->|"absent (anon)"| PF9["do_anonymous_page()<br/>memory.c:5321<br/>read: zero-page PTE<br/>write: alloc_anon_folio() + set_pte_at()"]
-        PF8 -->|"write on RO (COW)"| PF10["do_cow_fault()<br/>memory.c:5905<br/>folio_prealloc() · __do_fault()<br/>copy_mc_user_highpage() · finish_fault()"]
-        PF8 -->|"swap entry"| PF11["do_swap_page()<br/>read from swap device · install PTE"]
+        PF8 -->|"absent"| PF8b["do_pte_missing()<br/>memory.c:4545<br/>Dispatch anon vs. file-backed"]
+        PF8b -->|"anon (!VM_SHARED)"| PF9["do_anonymous_page()<br/>memory.c:5321<br/>read: zero-page PTE<br/>write: alloc_anon_folio() + set_pte_at()"]
+        PF8 -->|"write on RO"| PF10["do_wp_page()<br/>memory.c:4228<br/>Detect write to read-only PTE"]
+        PF10 -->|"COW needed"| PF10b["do_cow_fault()<br/>memory.c:5905<br/>folio_prealloc() · __do_fault()<br/>copy_mc_user_highpage() · finish_fault()"]
+        PF8 -->|"swap entry"| PF11["do_swap_page()<br/>memory.c:4779<br/>read from swap device · install PTE"]
     end
 
     subgraph BA["B — BUDDY ALLOCATOR (kmalloc path)"]
@@ -615,8 +635,8 @@ flowchart TD
     end
 
     BA13 -.->|"wakes"| KS1
-    PF9 -.->|"calls alloc_pages"| BA8
-    PF10 -.->|"calls folio_prealloc"| BA8
+    PF9 -.->|"alloc_anon_folio → alloc_pages"| BA9
+    PF10b -.->|"folio_prealloc → alloc_pages"| BA9
 </div>
 
 ---
@@ -625,7 +645,13 @@ flowchart TD
 
 ### Overview
 
-The device driver subsystem encompasses three interlocking flows: (A) **driver/device registration and probe** — the device model matching a driver to a device and calling `probe()`; (B) **character device I/O** — how `open()`/`read()`/`write()` from userspace reaches driver callbacks; and (C) **block device I/O** — how a `bio` travels from `submit_bio()` through the multi-queue block layer to hardware and back via interrupt, covering both the top-half ISR and the bottom-half softirq.
+Device drivers are the kernel's translators — they turn generic kernel requests ("read 4 KB from this device") into hardware-specific commands ("write these bytes to this register"). This section traces three flows that show how a driver is connected to the kernel in the first place, and how data moves through it.
+
+**Flow A — Registration and probe: introducing a driver to its device.** When a driver module is loaded, it registers itself with the kernel and announces which devices it can handle (identified by vendor and device ID). The kernel then walks every device on the relevant bus — for example, every card on the PCI bus — and asks: does this driver recognize this device? When there is a match, the kernel calls the driver's `probe()` function, which maps the device's hardware registers into kernel memory, allocates DMA buffers, and registers interrupt handlers. After `probe()` returns, the driver is live and the device is ready to use. The same matching also runs in reverse: if a driver is already loaded when a new device is plugged in (e.g. USB hotplug), the kernel calls `probe()` immediately on detection.
+
+**Flow B — Character device I/O: a direct line from userspace to the driver.** Character devices (terminals, sensors, custom hardware) expose themselves as files under `/dev/`. When a driver registers a character device, it stores a table of function pointers (`file_operations`) keyed by its major:minor device number. When a program calls `open("/dev/mydev")`, the VFS layer looks up that table by device number and swaps it into the file descriptor. Every subsequent `read()`, `write()`, or `ioctl()` on that file descriptor goes directly to the corresponding function in the driver's table — no queuing or scheduling in between.
+
+**Flow C — Block device I/O: from a filesystem write to hardware and back.** Block devices (NVMe, SATA, virtual disks) use a different path because their I/O must be queued, merged, and reordered for efficiency. A filesystem hands the kernel a `bio` — a description of the data to read or write — via `submit_bio()`. The multi-queue block layer (blk-mq) tries to merge it with nearby pending requests, then places it in a per-CPU hardware queue and calls the driver's `queue_rq()` to send it to the device. The driver writes a command descriptor to the device's hardware ring and returns immediately — the CPU does not wait. When the device finishes, it raises a hardware interrupt. The interrupt handler (top half) runs with interrupts disabled and does the minimum: it acknowledges the interrupt and records the result. Any heavier follow-up work is deferred to a bottom half, which runs either as a tasklet (still in interrupt context, but with interrupts re-enabled) or as a threaded IRQ handler (a full kernel thread that can sleep). The bottom half calls `blk_mq_end_request()` to mark the request complete and wake up whatever process was waiting for the data.
 
 ---
 
@@ -795,13 +821,15 @@ flowchart TD
         BL1 --> BL2["blk_mq_submit_bio(bio)<br/>blk-mq.c:3141<br/>Merge? → blk_mq_attempt_bio_merge()"]
         BL2 --> BL3["blk_mq_get_new_requests()<br/>Allocate struct request from tag set<br/>blk_mq_bio_to_request()"]
         BL3 --> BL4{plug active?}
-        BL4 -->|yes| BL5["blk_add_rq_to_plug(plug, rq)<br/>Batch — dispatch on plug flush"]
+        BL4 -->|yes| BL5["blk_add_rq_to_plug(plug, rq)<br/>Batch — dispatched on blk_finish_plug()"]
+        BL5 -.->|"blk_finish_plug()"| BL6
         BL4 -->|no| BL6["blk_mq_run_hw_queue()<br/>blk-mq.c:2352"]
         BL6 --> BL7["blk_mq_dispatch_rq_list()<br/>blk-mq.c:2116"]
         BL7 --> BL8["q→mq_ops→queue_rq(hctx, &bd)<br/>Driver: DMA-map · write HW descriptor ring"]
         BL8 --> BL9["⚡ Hardware DMA completes → IRQ"]
         BL9 --> BL10["handle_fasteoi_irq()<br/>kernel/irq/chip.c:737"]
-        BL10 --> BL11["__handle_irq_event_percpu()<br/>handle.c:185<br/>action→handler(irq, dev_id)<br/>Driver ISR top half: ACK hardware"]
+        BL10 --> BL10b["handle_irq_event()<br/>kernel/irq/handle.c:255"]
+        BL10b --> BL11["__handle_irq_event_percpu()<br/>handle.c:185<br/>action→handler(irq, dev_id)<br/>Driver ISR top half: ACK hardware"]
         BL11 --> BL12{threaded IRQ?}
         BL12 -->|yes| BL13["irq_thread() kthread<br/>manage.c:1244<br/>thread_fn() in process context"]
         BL12 -->|no, tasklet| BL14["raise_softirq(TASKLET_SOFTIRQ)<br/>softirq.c:790<br/>→ __do_softirq() → tasklet_action()<br/>softirq.c:963"]
